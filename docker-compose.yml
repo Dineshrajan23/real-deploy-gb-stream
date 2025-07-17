@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: "traefik:v2.9"
+    container_name: "traefik"
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.rtmp.address=:1935"
+    ports:
+      - "8888:80"       
+      - "1935:1935"   
+      - "8081:8080"   
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  db:
+    image: postgres:14-alpine
+    container_name: postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=streamuser
+      - POSTGRES_PASSWORD=streampassword
+      - POSTGRES_DB=streamdb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U streamuser -d streamdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: django_backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app 
+      - ./media:/media:ro 
+    ports:
+      - "8001:8000" 
+    environment:
+      - DB_NAME=streamdb
+      - DB_USER=streamuser
+      - DB_PASS=streampassword
+      - DB_HOST=db
+      - SECRET_KEY=your-super-secret-key-change-me
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s 
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.priority=10"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    restart: unless-stopped
+
+  srs:
+    image: ossrs/srs:4
+    container_name: srs_media_server
+    volumes:
+      - ./srs_config/srs.conf:/usr/local/srs/conf/srs.conf 
+      - ./media:/usr/local/srs/objs/nginx/html 
+    ports:
+
+      - "1985:1985" 
+      - "8088:8080" 
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.srs-rtmp.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.srs-rtmp.entrypoints=rtmp"
+      - "traefik.tcp.services.srs-rtmp.loadbalancer.server.port=1935"
+      - "traefik.http.routers.srs-hls.rule=Host(`localhost`) && (PathPrefix(`/live/`) || PathPrefix(`/record/`))"
+      - "traefik.http.routers.srs-hls.priority=10" 
+      - "traefik.http.services.srs-hls.loadbalancer.server.port=8080"
+    command: ./objs/srs -c conf/srs.conf
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: nextjs_frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules 
+      - /app/.next
+    ports:
+      - "3000:3000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+      - "traefik.http.routers.frontend.priority=1" 
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8888/api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
