@@ -15,7 +15,6 @@ class StreamOutSchema(Schema):
     hls_url: Optional[str] = None
     recorded_url: Optional[str] = None
 
-
 class SrsWebhookSchema(Schema):
     action: str
     client_id: str
@@ -54,5 +53,5 @@ class RecordingSchema(Schema):
 class LiveStreamSchema(Schema):
     id: int
     title: Optional[str]
-    hls_url: str 
+    hls_url: str
     user: UserSchema

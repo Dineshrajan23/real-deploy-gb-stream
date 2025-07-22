@@ -3,23 +3,25 @@ version: '3.8'
 services:
   traefik:
     image: "traefik:v2.9"
-    container_name: "traefik"
+    container_name: "gamebioss_traefik"
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.rtmp.address=:1935"
+      - "--entrypoints.web.address=:9000"
+      - "--entrypoints.rtmp.address=:9935"
+      - "--entrypoints.dashboard.address=:9001"
     ports:
-      - "8888:80"       
-      - "1935:1935"   
-      - "8081:8080"   
+      - "9000:9000"       
+      - "9935:9935"   
+      - "9001:9001" 
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    restart: unless-stopped
 
   db:
     image: postgres:14-alpine
-    container_name: postgres_db
+    container_name: gameboss_postgres_db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
@@ -35,13 +37,10 @@ services:
 
   backend:
     build: ./backend
-    container_name: django_backend
-    command: python manage.py runserver 0.0.0.0:8000
+    container_name: gameboss_django_backend
     volumes:
       - ./backend:/app 
       - ./media:/media:ro 
-    ports:
-      - "8001:8000" 
     environment:
       - DB_NAME=streamdb
       - DB_USER=streamuser
@@ -59,27 +58,26 @@ services:
       start_period: 10s 
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.rule=Host(`18.225.19.45`)"
+      - "traefik.http.routers.gboss-backend.pathprefix=/api"
+      - "traefik.http.routers.gboss-backend.entrypoints=web"
       - "traefik.http.routers.backend.priority=10"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
     restart: unless-stopped
 
   srs:
     image: ossrs/srs:4
-    container_name: srs_media_server
+    container_name: gameboss_srs_media_server
     volumes:
       - ./srs_config/srs.conf:/usr/local/srs/conf/srs.conf 
       - ./media:/usr/local/srs/objs/nginx/html 
-    ports:
-
-      - "1985:1985" 
-      - "8088:8080" 
     labels:
       - "traefik.enable=true"
       - "traefik.tcp.routers.srs-rtmp.rule=HostSNI(`*`)"
       - "traefik.tcp.routers.srs-rtmp.entrypoints=rtmp"
       - "traefik.tcp.services.srs-rtmp.loadbalancer.server.port=1935"
-      - "traefik.http.routers.srs-hls.rule=Host(`localhost`) && (PathPrefix(`/live/`) || PathPrefix(`/record/`))"
+      - "traefik.http.routers.srs-hls.rule=Host(`18.225.19.45`) && (PathPrefix(`/live/`) || PathPrefix(`/record/`))"
+      - "traefik.http.routers.gboss-srs-hls.entrypoints=web"
       - "traefik.http.routers.srs-hls.priority=10" 
       - "traefik.http.services.srs-hls.loadbalancer.server.port=8080"
     command: ./objs/srs -c conf/srs.conf
@@ -90,20 +88,19 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: nextjs_frontend
+    container_name: gameboss_nextjs_frontend
     volumes:
       - ./frontend:/app
       - /app/node_modules 
       - /app/.next
-    ports:
-      - "3000:3000"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+      - "traefik.http.routers.frontend.rule=Host(`18.225.19.45`)"
+      - "traefik.http.routers.gboss-srs-hls.entrypoints=web"
       - "traefik.http.routers.frontend.priority=1" 
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8888/api
+      - NEXT_PUBLIC_API_URL=http://18.225.19.45:9000/api
     restart: unless-stopped
 
 volumes:

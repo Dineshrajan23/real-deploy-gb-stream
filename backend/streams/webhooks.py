@@ -23,7 +23,6 @@ def srs_on_publish_webhook(request: HttpRequest):
         try:
             stream = Stream.objects.get(stream_key=stream_key)
             print(f"Found stream object in DB: {stream.user.username}")
-            
             stream.is_live = True
             stream.hls_url = f"/live/{stream_key}.m3u8"
             stream.save()

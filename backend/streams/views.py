@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from .models import Stream
-from .serializers import StreamSerializer, StreamKeySerializer
+from .serializers import  StreamKeySerializer
 
 class StreamKeyView(APIView):
     permission_classes = [IsAuthenticated]
