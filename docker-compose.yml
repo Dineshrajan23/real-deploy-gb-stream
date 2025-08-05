@@ -12,7 +12,7 @@ services:
       - "--entrypoints.rtmp.address=:1935"
     ports:
       - "${TRAEFIK_HOST_PORT:-8888}:80" # Expose HTTP entrypoint
-      - "1935:1935" # Expose RTMP entrypoint
+      # - "1935:1935" # Expose RTMP entrypoint commented out for the aanish -server
       - "8081:8080" # Expose Traefik dashboard
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
@@ -45,7 +45,7 @@ services:
     volumes:
       - ./backend:/app
 
-      - media-data:/media
+      # - media-data:/media
 
     environment:
       - DB_NAME=${POSTGRES_DB}
@@ -73,30 +73,30 @@ services:
       - gboss-net
     restart: unless-stopped
 
-  srs:
-    image: ossrs/srs:4
-    container_name: srs_media_server
-    volumes:
-      - ./srs_config/srs.conf:/usr/local/srs/conf/srs.conf:ro
+  # srs:
+  #   image: ossrs/srs:4
+  #   container_name: srs_media_server
+  #   volumes:
+  #     - ./srs_config/srs.conf:/usr/local/srs/conf/srs.conf:ro
 
-      - media-data:/usr/local/srs/objs/nginx/html
+  #     - media-data:/usr/local/srs/objs/nginx/html
 
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=gboss-net"
-      - "traefik.tcp.routers.srs-rtmp.rule=HostSNI(`*`)"
-      - "traefik.tcp.routers.srs-rtmp.entrypoints=rtmp"
-      - "traefik.tcp.services.srs-rtmp.loadbalancer.server.port=1935"
-      - "traefik.http.routers.srs-hls.rule=Host(`localhost`) && (PathPrefix(`/live/`) || PathPrefix(`/record/`))"
-      - "traefik.http.routers.srs-hls.priority=10"
-      - "traefik.http.services.srs-hls.loadbalancer.server.port=8080"
-    command: ./objs/srs -c conf/srs.conf
-    depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - gboss-net
-    restart: unless-stopped
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.docker.network=gboss-net"
+  #     - "traefik.tcp.routers.srs-rtmp.rule=HostSNI(`*`)"
+  #     - "traefik.tcp.routers.srs-rtmp.entrypoints=rtmp"
+  #     - "traefik.tcp.services.srs-rtmp.loadbalancer.server.port=1935"
+  #     - "traefik.http.routers.srs-hls.rule=Host(`localhost`) && (PathPrefix(`/live/`) || PathPrefix(`/record/`))"
+  #     - "traefik.http.routers.srs-hls.priority=10"
+  #     - "traefik.http.services.srs-hls.loadbalancer.server.port=8080"
+  #   command: ./objs/srs -c conf/srs.conf
+  #   depends_on:
+  #     backend:
+  #       condition: service_healthy
+  #   networks:
+  #     - gboss-net
+  #   restart: unless-stopped
 
   frontend:
     build: ./frontend
@@ -143,4 +143,4 @@ networks:
 # Define named volumes for persistent data
 volumes:
   postgres_data:
-  media-data:
+  # media-data:

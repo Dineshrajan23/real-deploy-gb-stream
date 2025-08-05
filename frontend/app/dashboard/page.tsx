@@ -59,7 +59,7 @@ export default function DashboardPage() {
       <div className="w-full max-w-2xl space-y-8">
         <div className="bg-gray-800 p-6 rounded-lg">
           <h2 className="text-2xl font-semibold mb-4">Streaming Setup</h2>
-          <p className="mb-2"><strong>RTMP Server:</strong> <code>rtmp://localhost:1935/live</code></p>
+      <p className="mb-2"><strong>RTMP Server:</strong> <code>{process.env.NEXT_PUBLIC_RTMP_URL}/live</code></p>   
           <div className="mb-4">
             <p className="mb-2"><strong>Stream Key:</strong></p>
             <div className="flex items-center space-x-4 bg-gray-900 p-2 rounded">

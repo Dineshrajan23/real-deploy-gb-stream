@@ -38,8 +38,9 @@ export default function Sidebar() {
   }, []);
 
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard' },
     { href: '/', label: 'Live Stream', isLive: isLive },
+    { href: '/dashboard', label: 'Dashboard' },
+    { href: '/recordings', label: 'Recordings' },
   ];
 
   return (

@@ -4,75 +4,17 @@ from django.db import transaction, IntegrityError
 from django.contrib.auth.models import User
 from .models import Stream, Recording, generate_stream_key
 from django.conf import settings
+from .rtmp_api_service import RtmpServerApiClient
 
-# Default SRS web root prefix for recordings
-SRS_WEB_ROOT_PREFIX_DEFAULT = "/usr/local/srs/objs/nginx/html"
+
+rtmp_api_client = RtmpServerApiClient(
+    host=getattr(settings, 'RTMP_SERVER_HOST', 'aanis-rtmp-server-ip'),
+    port=getattr(settings, 'RTMP_SERVER_API_PORT', 8080)
+)
+
 
 class StreamManagementService:
-    """Handles all business logic for streams and recordings."""
-
-    @staticmethod
-    def start_stream(stream_key: str) -> Optional[Stream]:
-        try:
-            with transaction.atomic():
-                stream = Stream.objects.select_for_update().get(stream_key=stream_key)
-                stream.is_live = True
-                stream.hls_url = f"/live/{stream_key}.m3u8"
-                stream.save()
-                print(f"SUCCESS: Stream started for user {stream.user.username}")
-                return stream
-        except Stream.DoesNotExist:
-            print(f"ERROR: Stream.DoesNotExist on start for key: {stream_key}")
-            return None
-
-    @staticmethod
-    def stop_stream(stream_key: str) -> Optional[Stream]:
-        try:
-            with transaction.atomic():
-                stream = Stream.objects.select_for_update().get(stream_key=stream_key)
-                stream.is_live = False
-                stream.hls_url = None
-                stream.save()
-                print(f"SUCCESS: Stream stopped for user {stream.user.username}")
-                return stream
-        except Stream.DoesNotExist:
-            print(f"ERROR: Stream.DoesNotExist on stop for key: {stream_key}")
-            return None
-
-    @staticmethod
-    def create_recording(stream_key: str, file_path_from_srs: str) -> Optional[Recording]:
-        """
-        Creates a Recording entry from the on_dvr webhook payload.
-        This is deterministic and removes the need for filesystem polling.
-        Validates that the file path exists and is accessible before creating the record.
-        """
-        try:
-            stream = Stream.objects.get(stream_key=stream_key)
-            web_root_prefix = getattr(
-                   settings, 
-                   'SRS_WEB_ROOT_PREFIX_DEFAULT', 
-                   SRS_WEB_ROOT_PREFIX_DEFAULT
-                )
-            if file_path_from_srs.startswith(web_root_prefix):
-                public_url_path = file_path_from_srs[len(web_root_prefix):]
-            else:
-                public_url_path = file_path_from_srs
-
-            # Validate file existence and accessibility
-            if not os.path.exists(file_path_from_srs) or not os.access(file_path_from_srs, os.R_OK):
-                print(f"ERROR: File does not exist or is not accessible: {file_path_from_srs}")
-                return None
-
-            recording = Recording.objects.create(
-                stream=stream,
-                file_path=public_url_path
-            )
-            print(f"SUCCESS: Created Recording object for file: {public_url_path}")
-            return recording
-        except Stream.DoesNotExist:
-            print(f"ERROR: Stream.DoesNotExist on recording creation for key: {stream_key}")
-            return None
-            return None
+    """Handles all business logic related to stream management."""
 
 
     @staticmethod
@@ -94,11 +36,22 @@ class StreamManagementService:
 
     @staticmethod
     def reset_stream_key(user: User) -> Optional[Stream]:
-        """SRP: Encapsulates the logic for generating and saving a new stream key."""
+        """Proactively resets stream key and syncs with the RTMP server API."""
         try:
             stream = Stream.objects.get(user=user)
-            stream.stream_key = generate_stream_key()
-            stream.save()
+            old_stream_key = stream.stream_key
+            new_stream_key = generate_stream_key()
+
+            with transaction.atomic():
+                stream.stream_key = new_stream_key
+                stream.save()
+            
+            rtmp_api_client.delete_stream(old_stream_key)
+
+            if not rtmp_api_client.add_stream(new_stream_key):
+                print(f"ERROR: Failed to add new stream key {new_stream_key} to RTMP server.")
+
+            
             return stream
         except Stream.DoesNotExist:
             return None
