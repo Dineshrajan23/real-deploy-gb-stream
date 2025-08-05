@@ -12,13 +12,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS("Starting RTMP stream polling..."))
         rtmp_api_client = RtmpServerApiClient(
-            host=getattr(settings, 'RTMP_SERVER_HOST', 'aanis-server-ip'),
-            port=getattr(settings, 'RTMP_SERVER_API_PORT', 8080)
+            host=settings.RTMP_SERVER_HOST,
+            port=settings.RTMP_SERVER_API_PORT
         )
 
-        RTMP_HLS_BASE_URL = getattr(settings, 'RTMP_HLS_BASE_URL', 'http://aanis-server-ip:8080/live/')
+        RTMP_HLS_BASE_URL = settings.RTMP_HLS_BASE_URL
+        
 
-        polling_interval = getattr(settings, 'RTMP_POLLING_INTERVAL_SECONDS', 15) 
+        polling_interval = settings.RTMP_POLLING_INTERVAL or 10  # Default to 10 seconds if not set
 
         while True:
             try:

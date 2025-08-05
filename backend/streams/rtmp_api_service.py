@@ -9,7 +9,7 @@ class RtmpServerApiClient:
     """
     def __init__(self, host: str, port: int):
         self.base_url = f"http://{host}:{port}/api2"   #checkout this URL format and it will be added from the .env file through service.py 
-        self.headers = {'Content-Type': 'application/x-www-form-urlencoded'} 
+        self.headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 
     def _post(self, command: str, payload_data: Dict) -> requests.Response:
         """Helper to format and send the POST request."""
@@ -22,13 +22,13 @@ class RtmpServerApiClient:
         """Adds a stream key to the RTMP server."""
         payload_data = {
             stream_name: {
-                "source": "push://", 
-                "disable_audio": disable_audio, 
+                "source": "push://",
+                "disable_audio": disable_audio,
             },
-            "stop_sessions": True 
+            "stop_sessions": True
         }
-        response = self._post("addstream", payload_data) 
-        return response.status_code == 200 
+        response = self._post("addstream", payload_data)
+        return response.status_code == 200
 
     def delete_stream(self, stream_name: str) -> bool:
         """Deletes a stream key from the RTMP server."""

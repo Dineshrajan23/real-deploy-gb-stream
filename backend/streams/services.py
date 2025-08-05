@@ -1,4 +1,4 @@
-import os
+
 from typing import Optional, List
 from django.db import transaction, IntegrityError
 from django.contrib.auth.models import User
@@ -7,9 +7,11 @@ from django.conf import settings
 from .rtmp_api_service import RtmpServerApiClient
 
 
+
+
 rtmp_api_client = RtmpServerApiClient(
-    host=getattr(settings, 'RTMP_SERVER_HOST', 'aanis-rtmp-server-ip'),
-    port=getattr(settings, 'RTMP_SERVER_API_PORT', 8080)
+    host=settings.RTMP_SERVER_HOST,
+    port=settings.RTMP_SERVER_API_PORT
 )
 
 
