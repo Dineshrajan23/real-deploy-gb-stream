@@ -73,6 +73,30 @@ services:
       - gboss-net
     restart: unless-stopped
 
+    # New service for polling RTMP stream status
+  rtmp_poller:
+    build: ./backend # Build from your backend's Dockerfile
+    container_name: rtmp_poller_service
+    command: python manage.py poll_rtmp_streams # Run the custom management command
+    environment:
+      - DB_NAME=${POSTGRES_DB}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASS=${POSTGRES_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - SECRET_KEY=${SECRET_KEY} # Needed for Django settings
+      - RTMP_SERVER_HOST=${RTMP_SERVER_HOST}
+      - RTMP_SERVER_API_PORT=${RTMP_SERVER_API_PORT}
+      - RTMP_HLS_BASE_URL=${RTMP_HLS_BASE_URL}
+      - RTMP_POLLING_INTERVAL_SECONDS=${RTMP_POLLING_INTERVAL_SECONDS}
+    depends_on:
+      db:
+        condition: service_healthy # Ensure database is ready
+      backend:
+        condition: service_healthy # Ensure backend (and its models) are ready
+    networks:
+      - gboss-net
+    restart: unless-stopped # Keep it running
+
   # srs:
   #   image: ossrs/srs:4
   #   container_name: srs_media_server

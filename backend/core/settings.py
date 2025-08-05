@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os  
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -153,3 +154,14 @@ SESSION_COOKIE_SECURE = False
 
 
 SESSION_COOKIE_DOMAIN = "localhost"
+
+
+# --- RTMP Server Integration Settings ---
+
+RTMP_SERVER_HOST = os.environ.get('RTMP_SERVER_HOST', 'aanis-server-ip')
+
+RTMP_SERVER_API_PORT = int(os.environ.get('RTMP_SERVER_API_PORT', 8080))
+
+RTMP_HLS_BASE_URL = os.environ.get('RTMP_HLS_BASE_URL', 'http://aanis-server-ip:8080/live/')
+
+RTMP_POLLING_INTERVAL_SECONDS = int(os.environ.get('RTMP_POLLING_INTERVAL_SECONDS', 15))
