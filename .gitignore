@@ -1,5 +1,5 @@
 /media
-/rtmpserver_build
-/rtmpserver_configs
+# /rtmpserver_build
+# /rtmpserver_configs
 /srs_config
 /venv
