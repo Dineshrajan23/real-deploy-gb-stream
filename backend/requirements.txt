@@ -3,3 +3,4 @@ django-ninja
 psycopg2-binary
 django-cors-headers
 requests
+djangorestframework>=3.14.0

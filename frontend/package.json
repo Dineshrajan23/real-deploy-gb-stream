@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "hls.js": "^1.6.7",
+    "hls.js": "^1.6.8",
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

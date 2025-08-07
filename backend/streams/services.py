@@ -11,7 +11,7 @@ from .rtmp_api_service import RtmpServerApiClient
 
 rtmp_api_client = RtmpServerApiClient(
     host=settings.RTMP_SERVER_HOST,
-    port=settings.RTMP_SERVER_API_PORT
+    api_port=settings.RTMP_SERVER_API_PORT
 )
 
 

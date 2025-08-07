@@ -5,6 +5,7 @@ from pydantic import Field
 
 class UserSchema(Schema):
     username: str
+    email : str
 
 class StreamKeySchema(Schema):
     stream_key: str
@@ -55,3 +56,6 @@ class LiveStreamSchema(Schema):
     title: Optional[str]
     hls_url: str
     user: UserSchema
+
+class DashboardUpdateSchema(Schema):
+    title: str 

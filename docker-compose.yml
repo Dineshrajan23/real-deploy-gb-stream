@@ -1,5 +1,4 @@
-
-
+version: '3.8'
 services:
   traefik:
     image: "traefik:v2.9"
@@ -9,10 +8,12 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.rtmp.address=:1935"
+      # The RTMP entrypoint is commented out, as the new rtmpserver will handle RTMP directly.
+      # - "--entrypoints.rtmp.address=:1935"
     ports:
-      - "${TRAEFIK_HOST_PORT:-8888}:80" # Expose HTTP entrypoint
-      # - "1935:1935" # Expose RTMP entrypoint commented out for the aanish -server
+      - "${TRAEFIK_HOST_PORT:-8888}:80" # Expose HTTP entrypoint for frontend/backend
+      # The RTMP port is no longer managed by Traefik.
+      # - "1935:1935"
       - "8081:8080" # Expose Traefik dashboard
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
@@ -44,20 +45,21 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./backend:/app
-
-      # - media-data:/media
-
     environment:
       - DB_NAME=${POSTGRES_DB}
       - DB_USER=${POSTGRES_USER}
       - DB_PASS=${POSTGRES_PASSWORD}
       - DB_HOST=${DB_HOST}
       - SECRET_KEY=${SECRET_KEY}
+      # Pass RTMP server settings to the backend for RtmpServerApiClient initialization
+      # Host will be the service name 'rtmpserver' for inter-container communication
+      - RTMP_SERVER_HOST=rtmpserver
+      - RTMP_SERVER_API_PORT=${RTMP_SERVER_API_PORT}
+      - RTMP_HLS_BASE_URL=${RTMP_HLS_BASE_URL}
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-
       test: ["CMD", "python", "healthcheck.py"]
       interval: 10s
       timeout: 5s
@@ -73,7 +75,7 @@ services:
       - gboss-net
     restart: unless-stopped
 
-    # New service for polling RTMP stream status
+  # New service for polling RTMP stream status
   rtmp_poller:
     build: ./backend # Build from your backend's Dockerfile
     container_name: rtmp_poller_service
@@ -84,43 +86,47 @@ services:
       - DB_PASS=${POSTGRES_PASSWORD}
       - DB_HOST=${DB_HOST}
       - SECRET_KEY=${SECRET_KEY} # Needed for Django settings
-      - RTMP_SERVER_HOST=${RTMP_SERVER_HOST}
+      # Host will be the service name 'rtmpserver' for inter-container communication
+      - RTMP_SERVER_HOST=rtmpserver
       - RTMP_SERVER_API_PORT=${RTMP_SERVER_API_PORT}
       - RTMP_HLS_BASE_URL=${RTMP_HLS_BASE_URL}
       - RTMP_POLLING_INTERVAL_SECONDS=${RTMP_POLLING_INTERVAL_SECONDS}
     depends_on:
       db:
-        condition: service_healthy # Ensure database is ready
+        condition: service_healthy
       backend:
-        condition: service_healthy # Ensure backend (and its models) are ready
+        condition: service_healthy
+      rtmpserver: # Poller depends on rtmpserver to be up
+        condition: service_started
     networks:
       - gboss-net
-    restart: unless-stopped # Keep it running
+    # network_mode: host 
+    restart: unless-stopped
 
-  # srs:
-  #   image: ossrs/srs:4
-  #   container_name: srs_media_server
-  #   volumes:
-  #     - ./srs_config/srs.conf:/usr/local/srs/conf/srs.conf:ro
 
-  #     - media-data:/usr/local/srs/objs/nginx/html
+  rtmpserver:    #this entire rtmp server will be maintained by aanis so we dont need here for this
+    container_name: "rtmpserver"
+    build:
+      context: ./rtmpserver_build # Tells Docker to use this directory as the build context
+      dockerfile: Dockerfile      # Specifies the Dockerfile within that context
+    ports:
+      - 4242:4242 # API port (Host:Container)
+      - 8080:8080 # HTTP/HLS playback port (Host:Container)
+      - 1935:1935 # RTMP push port (Host:Container)
 
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.docker.network=gboss-net"
-  #     - "traefik.tcp.routers.srs-rtmp.rule=HostSNI(`*`)"
-  #     - "traefik.tcp.routers.srs-rtmp.entrypoints=rtmp"
-  #     - "traefik.tcp.services.srs-rtmp.loadbalancer.server.port=1935"
-  #     - "traefik.http.routers.srs-hls.rule=Host(`localhost`) && (PathPrefix(`/live/`) || PathPrefix(`/record/`))"
-  #     - "traefik.http.routers.srs-hls.priority=10"
-  #     - "traefik.http.services.srs-hls.loadbalancer.server.port=8080"
-  #   command: ./objs/srs -c conf/srs.conf
-  #   depends_on:
-  #     backend:
-  #       condition: service_healthy
-  #   networks:
-  #     - gboss-net
-  #   restart: unless-stopped
+    volumes:
+      # Mount config.json from your local rtmpserver_configs directory
+      - type: bind
+        source: ./rtmpserver_configs/config.json
+        target: /etc/rtmpserver/config.json
+    environment:
+      ENTRYLABEL: RTMPServer
+      TZ: Asia/Kolkata
+      CONFIG_DIR: /etc/rtmpserver # Set CONFIG_DIR for healthcheck.sh
+    shm_size: '8gb' # Recommended for video processing
+    networks:
+      - gboss-net
+    restart: always
 
   frontend:
     build: ./frontend
@@ -129,7 +135,6 @@ services:
       - ./frontend:/app
       - /app/node_modules
       - /app/.next
-
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=gboss-net"
@@ -138,24 +143,7 @@ services:
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
     environment:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-    networks:
-      - gboss-net
-    restart: unless-stopped
-
-  netdata:
-    image: netdata/netdata
-    container_name: gboss_netdata
-    ports:
-      - "19999:19999"
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    cap_add:
-      - SYS_PTRACE
-    security_opt:
-      - apparmor:unconfined
-    pid: host
+      - NEXT_PUBLIC_RTMP_URL=${NEXT_PUBLIC_RTMP_URL}
     networks:
       - gboss-net
     restart: unless-stopped
@@ -164,7 +152,5 @@ networks:
   gboss-net:
     name: gboss-net
 
-# Define named volumes for persistent data
 volumes:
   postgres_data:
-  # media-data:

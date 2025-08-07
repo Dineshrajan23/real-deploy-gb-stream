@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef} from 'react';
 import { useRouter } from 'next/navigation';
+import Hls from 'hls.js';
 
 type DashboardData = {
   stream_key: string;
   stream_title: string | null;
   is_live: boolean;
+  hls_url: string | null;
 };
 
 export default function DashboardPage() {
@@ -14,6 +16,7 @@ export default function DashboardPage() {
   const [newTitle, setNewTitle] = useState('');
   const [showKey, setShowKey] = useState(false);
   const router = useRouter();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const fetchDashboardData = async () => {
     const response = await fetch('/api/dashboard');
@@ -29,6 +32,28 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+    useEffect(() => {
+    if (data && data.is_live && data.hls_url && videoRef.current) {
+      const video = videoRef.current;
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(data.hls_url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+          video.play();
+        });
+        // Clean up HLS instance on component unmount or URL change
+        return () => {
+          hls.destroy();
+        };
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support for Safari/iOS
+        video.src = data.hls_url;
+        video.play();
+      }
+    }
+  }, [data]); // Re-run when data changes
 
   const handleUpdateTitle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +102,18 @@ export default function DashboardPage() {
           <button onClick={handleResetKey} className="text-sm text-red-500 hover:text-red-400">
             Reset Key
           </button>
+        </div>
+
+          <div className="bg-gray-800 p-6 rounded-lg">
+          <h2 className="text-2xl font-semibold mb-4">Live Stream Preview</h2>
+          {data.is_live && data.hls_url ? (
+            <div className="w-full bg-black rounded overflow-hidden">
+              <video ref={videoRef} controls autoPlay muted className="w-full h-auto"></video>
+              <p className="text-sm text-gray-400 mt-2">Playing from: <code>{data.hls_url}</code></p>
+            </div>
+          ) : (
+            <p className="text-gray-400">Stream is currently offline. Start streaming from OBS!</p>
+          )}
         </div>
 
        
