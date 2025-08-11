@@ -13,10 +13,12 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os  
 
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+APP_DOMAIN = os.environ.get('APP_DOMAIN', 'localhost')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -26,7 +28,7 @@ SECRET_KEY = 'django-insecure-(^9bmgy_f0%&ywoyc0j78x=i*pcp#_86k#_eugg#=%b%1_v3ry
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', 'backend']
+ALLOWED_HOSTS = ['localhost', 'backend', APP_DOMAIN]
 
 
 # Application definition
@@ -80,10 +82,10 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'streamdb',
-        'USER': 'streamuser',
-        'PASSWORD': 'streampassword',
-        'HOST': 'db',
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER',),
+        'PASSWORD': os.environ.get('DB_PASS', ),
+        'HOST': os.environ.get('DB_HOST', ),
         'PORT': '5432',
     }
 }
@@ -132,19 +134,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8888", 
+    
     "http://localhost:3000", 
+    f"http://{APP_DOMAIN}",
 ]
 
 
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8888",
+   
+    f"http://{APP_DOMAIN}",
 ]
 
 
-CSRF_COOKIE_DOMAIN = "localhost"
+CSRF_COOKIE_DOMAIN = APP_DOMAIN
+
 
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE = False 
@@ -153,7 +158,7 @@ SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SECURE = False 
 
 
-SESSION_COOKIE_DOMAIN = "localhost"
+SESSION_COOKIE_DOMAIN = APP_DOMAIN
 
 
 # --- RTMP Server Integration Settings ---
