@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Sidebar from '@/components/Sidebar';
+
 import VideoPlayer from '@/components/VideoPlayer';
 
 type DashboardData = {
@@ -58,7 +58,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
-      <Sidebar />
+
       <main className="flex-1 p-8">
         <h1 className="text-4xl font-bold mb-10 text-white">My Dashboard</h1>
         <div className="w-full max-w-4xl mx-auto space-y-8">
