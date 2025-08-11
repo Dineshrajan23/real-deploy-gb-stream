@@ -9,8 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@next/bundle-analyzer": "^15.4.6",
     "hls.js": "^1.6.8",
     "next": "15.3.5",
+    "next-images": "^1.8.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-
+import Image from 'next/image';
 
 type StreamStatus = {
   is_live: boolean;
@@ -14,7 +14,6 @@ export default function Sidebar() {
   const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
- 
     const checkStreamStatus = async () => {
       try {
         const response = await fetch('/api/dashboard');
@@ -22,7 +21,6 @@ export default function Sidebar() {
           const data: StreamStatus = await response.json();
           setIsLive(data.is_live);
         } else {
-  
           setIsLive(false);
         }
       } catch (error) {
@@ -30,7 +28,6 @@ export default function Sidebar() {
       }
     };
 
-    
     checkStreamStatus();
     const interval = setInterval(checkStreamStatus, 15000);
 
@@ -38,27 +35,39 @@ export default function Sidebar() {
   }, []);
 
   const navItems = [
-    { href: '/', label: 'Live Stream', isLive: isLive },
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/recordings', label: 'Recordings' },
+    { href: '/', label: 'Streamers & Videos', isLive: isLive },
+    { href: '/community', label: 'Communities & Chat' },
+    { href: '/settings', label: 'Settings' },
   ];
 
   return (
-    <aside className="w-64 bg-gray-900 text-white p-6 flex flex-col">
-      <h1 className="text-2xl font-bold mb-10">My Platform</h1>
+    <aside className="w-64 flex-none min-h-screen bg-gray-900 text-white p-6 flex flex-col border-r border-gray-800">
+      <div className="flex items-center mb-6">
+        <Image
+          src="/logo/gameboss_logo.svg"
+          alt="Logo"
+          width={100}
+          height={60}
+          className="mr-2"
+        />
+      </div>
       <nav>
         <ul>
           {navItems.map((item) => (
             <li key={item.href} className="mb-4">
               <Link href={item.href}>
                 <div
-                  className={`flex items-center p-3 rounded-lg hover:bg-gray-700 transition-colors ${
-                    pathname === item.href ? 'bg-blue-600' : ''
+                  className={`flex items-center p-3 rounded-lg transition-colors ${
+                    pathname === item.href 
+                      ? 'text-purple-500'
+                      : 'hover:text-purple-400' 
                   }`}
                 >
                   {item.label}
-                  {item.isLive && (
-                    <span className="ml-auto w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+                  {item.isLive && item.href === '/' && (
+                    <span className="ml-auto w-3 h-3 bg-violet-600 rounded-full animate-pulse"></span>
                   )}
                 </div>
               </Link>
