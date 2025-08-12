@@ -3,3 +3,5 @@
 # /rtmpserver_configs
 /srs_config
 /venv
+/.env.local
+/docker-compose.local.yml
