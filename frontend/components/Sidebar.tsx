@@ -65,7 +65,7 @@ export default function Sidebar({ isSidebarOpen, onClose }: SidebarProps) {
         className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-gray-900 text-white p-6 border-r border-gray-800 transition-all duration-300
         ${isSidebarOpen ? 'w-64' : 'w-20'} lg:static lg:flex-none
         ${!isSidebarOpen && !isHovered ? 'lg:w-20' : 'lg:w-64'}
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
+        ${isSidebarOpen ? 'translate-x-2' : '-translate-x-full'} lg:translate-x-0`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >

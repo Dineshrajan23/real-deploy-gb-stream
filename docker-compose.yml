@@ -64,7 +64,12 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.backend-api.rule=Host(`18.225.19.45`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend-api.entrypoints=web"
+      - "traefik.http.routers.backend-api.service=backend"
+      - "traefik.http.routers.backend-admin.rule=Host(`18.225.19.45`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.backend-admin.entrypoints=web"
+      - "traefik.http.routers.backend-admin.service=backend"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
 
   rtmp_poller:
