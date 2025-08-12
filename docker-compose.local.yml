@@ -1,0 +1,122 @@
+# docker-compose.local.yml
+
+services:
+  traefik:
+    image: "traefik:v2.9"
+    container_name: "traefik"
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "8888:80" # Use a different port for local dev to avoid conflicts
+      - "8081:8080" # Traefik dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - gboss-net
+    restart: unless-stopped
+
+  db:
+    image: postgres:14-alpine
+    container_name: postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gboss-net
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: django_backend
+    env_file:
+      - ./.env.local
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app # Binds your local code for live reloading
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - gboss-net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend-api.rule=Host(`localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend-api.entrypoints=web"
+      - "traefik.http.routers.backend-api.service=backend"
+      - "traefik.http.routers.backend-admin.rule=Host(`localhost`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.backend-admin.entrypoints=web"
+      - "traefik.http.routers.backend-admin.service=backend"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+
+  rtmp_poller:
+    build: ./backend
+    container_name: rtmp_poller_service
+    env_file:
+      - ./.env.local
+    command: python manage.py poll_rtmp_streams
+    depends_on:
+      db:
+        condition: service_healthy
+      rtmpserver:
+        condition: service_started
+    networks:
+      - gboss-net
+    restart: unless-stopped
+
+  rtmpserver:
+    container_name: "rtmpserver"
+    build:
+      context: ./rtmpserver_build
+      dockerfile: Dockerfile
+    ports:
+      - "1935:1935"
+    volumes:
+      - type: bind
+        source: ./rtmpserver_configs/config.json
+        target: /etc/rtmpserver/config.json
+    environment:
+      ENTRYLABEL: RTMPServer
+      TZ: Asia/Kolkata
+      CONFIG_DIR: /etc/rtmpserver
+    shm_size: '8gb'
+    networks:
+      - gboss-net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rtmpserver-hls.rule=Host(`localhost`) && PathPrefix(`/hls`)"
+      - "traefik.http.services.rtmpserver-hls.loadbalancer.server.port=8082"
+
+  frontend:
+    build: ./frontend
+    container_name: nextjs_frontend
+    env_file:
+      - ./.env.local
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - gboss-net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+
+networks:
+  gboss-net:
+    name: gboss-net
+
+volumes:
+  postgres_data:
