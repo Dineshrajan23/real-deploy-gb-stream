@@ -44,13 +44,13 @@ export default function RecordingsPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-24">
-      <h1 className="text-4xl font-bold mb-10">Past Streams</h1>
+    <main className="flex  min-h-screen flex-col  items-center  p-24">
+      <h1 className="text-4xl  font-italic md:text-3xl sm:text-2xl mb-10">Past Streams</h1>
       <div className="w-full max-w-4xl">
         {recordings.length > 0 ? (
           <ul className="space-y-4">
             {recordings.map((rec) => (
-              <li key={rec.id} className="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors">
+              <li key={rec.id} className="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors ">
                 <Link href={`/recordings/${rec.id}`}>
                   <div className="flex justify-between items-center">
                     <div>
@@ -66,9 +66,9 @@ export default function RecordingsPage() {
             ))}
           </ul>
         ) : (
-           <div className="text-center bg-gray-800 p-10 rounded-lg">
-            <h2 className="text-2xl mb-4">No recordings found.</h2>
-            <p className="text-gray-400">This page will update once you finish a stream.</p>
+           <div className="text-center bg-gray-800 p-10 rounded-lg shadow-lg">
+            <h2 className="text-2xl font-bold mb-4 ">No recordings found.</h2>
+            <p className="text-gray-400 ">This page will update once you finish a stream.</p>
           </div>
         )}
       </div>

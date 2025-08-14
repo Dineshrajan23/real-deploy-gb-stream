@@ -1,6 +1,6 @@
 'use client';
 
-import LiveStreamFeed from '@/components/LiveStreamFeed';
+import LiveStreamFeed from '@/components/streamComponent/LiveStreamFeed';
 
 export default function Home() {
   return (

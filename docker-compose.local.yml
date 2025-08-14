@@ -1,0 +1,137 @@
+# Use this file with 'docker-compose -f docker-compose.local.yml up' for local development.
+
+services:
+  traefik:
+    image: "traefik:v2.9"
+    container_name: "traefik"
+    command:
+      # Enable the Traefik API and dashboard
+      - "--api.insecure=true"
+      # Enable the Docker provider to automatically discover services
+      - "--providers.docker=true"
+      # Do not expose containers unless explicitly labeled
+      - "--providers.docker.exposedbydefault=false"
+      # Define the web entrypoint for HTTP traffic
+      - "--entrypoints.web.address=:80"
+      # Define the rtmp entrypoint for RTMP traffic
+      - "--entrypoints.rtmp.address=:1935"
+    ports:
+      # Map host port 8888 to Traefik's web entrypoint (port 80)
+      - "8888:80"
+      # Map host port 8081 to the Traefik dashboard (port 8080)
+      - "8081:8080"
+
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - gboss-net
+    restart: unless-stopped
+
+  db:
+    image: postgres:14-alpine
+    container_name: postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    # PostgreSQL port is for internal access, no need to expose it on the host
+    # unless you are connecting from your local machine with a database client.
+    ports:
+      - "5432:5432"
+    networks:
+      - gboss-net
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: django_backend
+    env_file:
+      - ./.env.local
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app # Binds your local code for live reloading
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - gboss-net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend-api.rule=Host(`localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend-api.entrypoints=web"
+      - "traefik.http.routers.backend-api.service=backend"
+      - "traefik.http.routers.backend-admin.rule=Host(`localhost`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.backend-admin.entrypoints=web"
+      - "traefik.http.routers.backend-admin.service=backend"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+
+  rtmp_poller:
+    build: ./backend
+    container_name: rtmp_poller_service
+    env_file:
+      - ./.env.local
+    command: python manage.py poll_rtmp_streams
+    depends_on:
+      db:
+        condition: service_healthy
+      rtmpserver:
+        condition: service_started
+    networks:
+      - gboss-net
+    restart: unless-stopped
+
+  rtmpserver:
+    container_name: "rtmpserver"
+    build:
+      context: ./rtmpserver_build
+      dockerfile: Dockerfile
+    # Expose the RTMP port on the host
+    ports:
+      - "1935:1935"
+    volumes:
+      - type: bind
+        source: ./rtmpserver_configs/config.json
+        target: /etc/rtmpserver/config.json
+    environment:
+      ENTRYLABEL: RTMPServer
+      TZ: Asia/Kolkata
+      CONFIG_DIR: /etc/rtmpserver
+    shm_size: '8gb'
+    networks:
+      - gboss-net
+    restart: unless-stopped
+    # No HTTP labels here, as this is for the RTMP protocol.
+    # If a separate HTTP/HLS service is needed, it should be in a different container.
+
+  frontend:
+    build: ./frontend
+    container_name: nextjs_frontend
+    env_file:
+      - ./.env.local
+    # Use Next.js host port mapping
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - gboss-net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+
+networks:
+  gboss-net:
+    name: gboss-net
+
+volumes:
+  postgres_data:
