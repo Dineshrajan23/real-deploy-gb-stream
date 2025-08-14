@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@next/bundle-analyzer": "^15.4.6",
     "hls.js": "^1.6.8",
     "lucide-react": "^0.539.0",
