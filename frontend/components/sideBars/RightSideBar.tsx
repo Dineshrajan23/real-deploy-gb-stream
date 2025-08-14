@@ -7,18 +7,18 @@ export default function RightSideBar() {
 
       <ul className="mt-2 sm:mt-4 space-y-1 sm:space-y-2  items-start sm:items-start  ">
         <li>
-          <a href="/link1" className="text-xs sm:text-base text-blue-400 hover:underline">
-            Link 1
+          <a href="#" className="text-xs sm:text-base text-white-400 ">
+            Follower 
           </a>
         </li>
         <li>
-          <a href="/link2" className="text-xs sm:text-base text-blue-400 hover:underline">
-            Link 2
+          <a href="#" className="text-xs sm:text-base text-white-400 ">
+            Follower 
           </a>
         </li>
         <li>
-          <a href="/link3" className="text-xs sm:text-base text-blue-400 hover:underline">
-            Link 3
+          <a href="#" className="text-xs sm:text-base text-white-400 ">
+            Follower 
           </a>
         </li>
       </ul>
