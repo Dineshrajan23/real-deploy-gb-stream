@@ -19,13 +19,19 @@ export const useDashboardData = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/dashboard');
+ 
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard`, {
+
+        credentials: 'include', 
+      });
+
       if (response.status === 401) {
         throw new Error('401 Unauthorized');
       }
       if (!response.ok) {
         throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
       }
+
       const result = await response.json();
       setData(result);
     } catch (err: any) {

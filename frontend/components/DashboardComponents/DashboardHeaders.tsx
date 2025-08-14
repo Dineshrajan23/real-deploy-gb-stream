@@ -11,7 +11,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ username }) => {
       <div className="flex items-center justify-between w-full max-w-7xl mx-auto">
         <div className="flex items-center space-x-4">
           <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold">
-            {username.charAt(0).toUpperCase()}
+            {username ? username.charAt(0).toUpperCase() : 'U'}
           </div>
           <h2 className="text-xl font-bold">{username}</h2>
         </div>

@@ -15,7 +15,7 @@ const StreamDetails: React.FC<StreamDetailsProps> = ({ streamTitle, onUpdateTitl
 
   const handleUpdateTitle = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch('/api/dashboard', {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: newTitle }),
