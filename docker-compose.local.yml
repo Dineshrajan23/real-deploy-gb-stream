@@ -1,17 +1,26 @@
-# docker-compose.local.yml
+# Use this file with 'docker-compose -f docker-compose.local.yml up' for local development.
 
 services:
   traefik:
     image: "traefik:v2.9"
     container_name: "traefik"
     command:
+      # Enable the Traefik API and dashboard
       - "--api.insecure=true"
+      # Enable the Docker provider to automatically discover services
       - "--providers.docker=true"
+      # Do not expose containers unless explicitly labeled
       - "--providers.docker.exposedbydefault=false"
+      # Define the web entrypoint for HTTP traffic
       - "--entrypoints.web.address=:80"
+      # Define the rtmp entrypoint for RTMP traffic
+      - "--entrypoints.rtmp.address=:1935"
     ports:
-      - "8888:80" # Use a different port for local dev to avoid conflicts
-      - "8081:8080" # Traefik dashboard
+      # Map host port 8888 to Traefik's web entrypoint (port 80)
+      - "8888:80"
+      # Map host port 8081 to the Traefik dashboard (port 8080)
+      - "8081:8080"
+
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
@@ -30,6 +39,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    # PostgreSQL port is for internal access, no need to expose it on the host
+    # unless you are connecting from your local machine with a database client.
+    ports:
+      - "5432:5432"
     networks:
       - gboss-net
     restart: unless-stopped
@@ -78,6 +91,7 @@ services:
     build:
       context: ./rtmpserver_build
       dockerfile: Dockerfile
+    # Expose the RTMP port on the host
     ports:
       - "1935:1935"
     volumes:
@@ -92,16 +106,17 @@ services:
     networks:
       - gboss-net
     restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.rtmpserver-hls.rule=Host(`localhost`) && PathPrefix(`/hls`)"
-      - "traefik.http.services.rtmpserver-hls.loadbalancer.server.port=8082"
+    # No HTTP labels here, as this is for the RTMP protocol.
+    # If a separate HTTP/HLS service is needed, it should be in a different container.
 
   frontend:
     build: ./frontend
     container_name: nextjs_frontend
     env_file:
       - ./.env.local
+    # Use Next.js host port mapping
+    ports:
+      - "3000:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules

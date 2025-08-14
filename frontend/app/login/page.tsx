@@ -59,11 +59,11 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="w-full max-w-md">
-        <form onSubmit={handleSubmit} className="bg-gray-800 shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    <main className="flex min-h flex-col items-center justify-center p-24">
+      <div className="w-full max-w-md ">
+        <form onSubmit={handleSubmit} className="bg-purple-800 shadow-md rounded px-8 pt-6 pb-8 mb-4">
           <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
-          {error && <p className="bg-red-500 text-white text-center p-2 rounded mb-4">{error}</p>}
+          {error && <p className="bg-red-400 text-white text-center p-2 rounded mb-4">{error}</p>}
           <div className="mb-4">
             <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="username">
               Username
@@ -92,7 +92,7 @@ export default function LoginPage() {
           </div>
           <div className="flex items-center justify-between">
             <button
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+              className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
               type="submit"
             >
               Sign In

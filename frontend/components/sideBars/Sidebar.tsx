@@ -62,7 +62,7 @@ export default function Sidebar({ isSidebarOpen, onClose }: SidebarProps) {
       ></div>
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-gray-900 text-white p-6 border-r border-gray-800 transition-all duration-300
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-zinc-900 text-white p-6 border-r border-gray-800 transition-all duration-300
         ${isSidebarOpen ? 'w-64' : 'w-20'} lg:static lg:flex-none
         ${!isSidebarOpen && !isHovered ? 'lg:w-20' : 'lg:w-64'}
         ${isSidebarOpen ? 'translate-x-2' : '-translate-x-full'} lg:translate-x-0`}
@@ -88,17 +88,31 @@ export default function Sidebar({ isSidebarOpen, onClose }: SidebarProps) {
                   <div
                     onClick={onClose}
                     className={`flex items-center p-3 rounded-lg transition-colors duration-200
-                    ${pathname === item.href ? 'text-purple-500' : 'text-gray-400 hover:text-purple-400'}`}
+      ${pathname === item.href
+                        ? 'text-purple-500'
+                        : 'text-gray-400 hover:text-purple-600'}`}
                   >
-                    <item.icon className={`text-xl transition-all duration-300 ${isHovered || isSidebarOpen ? 'mr-4' : 'mr-0'}`} />
-                    <span className={`whitespace-nowrap transition-all duration-300 overflow-hidden ${isHovered || isSidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0'}`}>
+                    <item.icon
+                      className={`text-xl transition-all duration-300 
+        ${isHovered || isSidebarOpen ? 'mr-4' : '-mr-2'}`}
+                    />
+
+                    <span
+                      className={`whitespace-nowrap transition-all duration-300 overflow-hidden text-1xl 
+        ${pathname === item.href
+                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent'
+                          : 'text-white'} 
+        ${isHovered || isSidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0'}`}
+                    >
                       {item.label}
                     </span>
+
                     {item.isLive && item.href === '/' && (
                       <span className="ml-auto w-3 h-3 bg-violet-600 rounded-full animate-pulse"></span>
                     )}
                   </div>
                 </Link>
+
               </li>
             ))}
           </ul>

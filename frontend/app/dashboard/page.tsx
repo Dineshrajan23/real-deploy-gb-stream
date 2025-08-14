@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-import VideoPlayer from '@/components/VideoPlayer';
+import VideoPlayer from '@/components/streamComponent/VideoPlayer';
 
 type DashboardData = {
   stream_key: string;
